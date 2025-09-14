@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declarationMap": true,
+    "sourceMap": true,
+    "removeComments": false,
+    "noEmitOnError": false
+  },
+  "include": ["lib/**/*", "generated/**/*", "prisma/**/*"],
+  "exclude": ["node_modules/**", "dist/**"]
+}

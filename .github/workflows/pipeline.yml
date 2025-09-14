@@ -1,0 +1,19 @@
+name: OET PG Schema Build Pipeline
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  schema-pipeline:
+    uses: oet-engineering/oet-admin-cicd-templates/.github/workflows/github-pkg-build-template.yml@main
+    with:
+      runs-on: ubuntu-latest
+      gh_app_id: ${{ vars.GH_ACTIONS_ID }}
+    secrets:
+      gh_app_token: ${{ secrets.GH_ACTIONS_TOKEN }}
+      gh_pat_write: ${{ secrets.OET_PAT_PKG_WRITE }}
