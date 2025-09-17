@@ -7,6 +7,6 @@
  *
  * 🟢 You can import this file directly.
  */
-export type * from './models/booking'
-export type * from './models/sample'
-export type * from './commonInputTypes'
+export type * from './models/booking.js'
+export type * from './models/sample.js'
+export type * from './commonInputTypes.js'
