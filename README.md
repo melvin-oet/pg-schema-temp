@@ -1,6 +1,6 @@
 # oet-pg-schema
 
-This package provides a reusable database module that can be imported into a NestJS application to establish database connections and access database models. It includes:
+This package provides a reusable database module that can be imported into services to establish database connections and access database models. It includes:
 
 - **DatabaseCoreModule**: A dynamic NestJS module for database connection management with lifecycle management.
 - **DatabaseClient**: A service that wraps Prisma Client and exposes database models.

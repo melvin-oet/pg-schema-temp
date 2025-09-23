@@ -1,25 +1,27 @@
 import { DynamicModule, Module } from '@nestjs/common';
-import { PrismaClient } from '../generated/prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { ModuleRef } from '@nestjs/core';
 import { DATABASE_CLIENT, DatabaseClient } from './database-client.service';
 
 export const CONNECTION = 'CONNECTION';
 
 export interface DatabaseCoreModuleOptions {
-  url: string;
+  readonly url: string;
 }
 
 @Module({})
 export class DatabaseCoreModule {
-  constructor(private readonly moduleRef: ModuleRef) {}
-  static forRoot(options: DatabaseCoreModuleOptions): DynamicModule {
+  public constructor(private readonly moduleRef: ModuleRef) {}
+  public static forRoot(
+    options: Readonly<DatabaseCoreModuleOptions>
+  ): DynamicModule {
     const connectionProvider = {
       provide: CONNECTION,
-      useFactory: async () => {
+      useFactory: async (): Promise<PrismaClient> => {
         const client = new PrismaClient({
           datasources: {
             db: {
-              url: options.url,
+              url: options.url ?? process.env.OET_DATABASE_URL ?? '',
             },
           },
         });
@@ -32,9 +34,8 @@ export class DatabaseCoreModule {
 
     const databaseClientProvider = {
       provide: DATABASE_CLIENT,
-      useFactory: async (prismaClient: PrismaClient) => {
-        const client = new DatabaseClient(prismaClient);
-        return client;
+      useFactory: (prismaClient: Readonly<PrismaClient>): DatabaseClient => {
+        return new DatabaseClient(prismaClient as PrismaClient);
       },
       inject: [CONNECTION],
     };
@@ -46,7 +47,7 @@ export class DatabaseCoreModule {
     };
   }
 
-  async onApplicationShutdown() {
+  public async onApplicationShutdown(): Promise<void> {
     const connection = this.moduleRef.get<PrismaClient>(CONNECTION, {
       strict: false,
     });
