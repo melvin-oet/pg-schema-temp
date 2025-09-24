@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - fix/ET-26/prisma-generate
   pull_request:
     branches:
       - main

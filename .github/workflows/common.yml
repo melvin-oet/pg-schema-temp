@@ -94,7 +94,7 @@ jobs:
         run: echo "version=$(node -p 'require("./package.json").version')" >> $GITHUB_OUTPUT
 
       - name: Semantic Release
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fix/ET-26/prisma-generate'
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           HUSKY: 0
@@ -123,6 +123,7 @@ jobs:
 
       - name: Publish to GitHub Packages Registry
         working-directory: dist
-        if: github.ref == 'refs/heads/main' &&
+        if:
+          (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fix/ET-26/prisma-generate') &&
           steps.pkg_version_before.outputs.version != steps.pkg_version_after.outputs.version
         run: pnpm publish --ignore-scripts
