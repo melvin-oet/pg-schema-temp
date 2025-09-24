@@ -10,9 +10,9 @@ on:
 
 jobs:
   schema-pipeline:
-    uses: common.yml
+    uses: ./.github/workflows/common.yml
     with:
-      runs-on: ./.github/workflows/common.yml
+      runs-on: ubuntu-latest
       gh_app_id: ${{ vars.GH_ACTIONS_ID }}
     secrets:
       gh_app_token: ${{ secrets.GH_ACTIONS_TOKEN }}
