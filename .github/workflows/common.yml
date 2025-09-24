@@ -1,0 +1,128 @@
+name: GitHub Package Build Template
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        required: true
+        type: string
+      environment:
+        required: false
+        type: string
+      gh_app_id:
+        required: true
+        type: string
+      packaging:
+        required: false
+        type: string
+      pre-install-steps:
+        required: false
+        type: string # Bash commands for additional steps
+      post-install-steps:
+        required: false
+        type: string # Bash commands for additional steps
+      has-coverage-report:
+        required: false
+        type: boolean
+        default: false
+      peer-deps:
+        required: false
+        type: boolean # Enable or disable `peer-deps`
+        default: false
+    secrets:
+      gh_app_token:
+        required: true
+      gh_pat_write:
+        required: true
+
+jobs:
+  build-and-publish:
+    runs-on: ${{ inputs.runs-on }}
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup PNPM
+        run: npm install --global pnpm@10.7.0
+
+      - name: Run Pre Install Steps
+        if: inputs.pre-install-steps != ''
+        run: ${{ inputs.pre-install-steps }}
+
+      - name: Install Dependencies
+        run: |
+          if [ "${{ inputs.peer-deps }}" == "true" ]; then
+            pnpm install --no-strict-peer-dependencies
+          else
+            pnpm install
+          fi
+
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ inputs.gh_app_id }}
+          private-key: ${{ secrets.gh_app_token }}
+
+      - name: 🔁 Configure Git with App Token
+        run: |
+          git config user.name "Release Bot"
+          git config user.email "bot@oet.com"
+          git remote set-url origin https://x-access-token:${{ steps.generate-token.outputs.token }}@github.com/${{ github.repository }}.git
+
+      - name: Run Post Install Steps
+        if: inputs.post-install-steps != ''
+        run: ${{ inputs.post-install-steps }}
+
+      - name: Upload Coverage Report
+        if: inputs.has-coverage-report == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/cobertura-coverage.xml
+
+      - name: Get current version
+        id: pkg_version_before
+        run: echo "version=$(node -p 'require("./package.json").version')" >> $GITHUB_OUTPUT
+
+      - name: Semantic Release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          HUSKY: 0
+          CI: true
+        run: |
+          npm run release
+
+      - name: Get new version
+        id: pkg_version_after
+        run: echo "version=$(node -p 'require("./package.json").version')" >> $GITHUB_OUTPUT
+
+      - name: Configure npm for GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.gh_pat_write }}
+        run: |
+          npm config set @melvin-oet:registry https://npm.pkg.github.com/
+          npm config set //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+
+      - name: Build Package
+        run: pnpm build
+
+      - name: Prepare dist folder for publishing
+        run: |
+          mkdir -p dist
+          cp package.json dist/
+
+      - name: Publish to GitHub Packages Registry
+        working-directory: dist
+        if: github.ref == 'refs/heads/main' &&
+          steps.pkg_version_before.outputs.version != steps.pkg_version_after.outputs.version
+        run: pnpm publish --ignore-scripts

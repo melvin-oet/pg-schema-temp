@@ -10,9 +10,9 @@ on:
 
 jobs:
   schema-pipeline:
-    uses: oet-engineering/oet-admin-cicd-templates/.github/workflows/github-pkg-build-template.yml@main
+    uses: common.yml
     with:
-      runs-on: ubuntu-latest
+      runs-on: ./.github/workflows/common.yml
       gh_app_id: ${{ vars.GH_ACTIONS_ID }}
     secrets:
       gh_app_token: ${{ secrets.GH_ACTIONS_TOKEN }}
